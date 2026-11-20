@@ -15,7 +15,7 @@ class AiSeoTwitterDescription extends AbstractNode
     {
         $resultArray = [
             'iconIdentifier' => 'actions-document-synchronize',
-            'title' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.generation.twitterDescriptionSuggestions'),
+            'title' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.generation.twitterDescriptionSuggestions'),
             'linkAttributes' => [
                 'id' => 'twitter_description_generation',
                 'class' => 'ai-seo-helper-suggestions-generation-btn',

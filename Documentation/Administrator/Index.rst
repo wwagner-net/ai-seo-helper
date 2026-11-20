@@ -18,24 +18,16 @@ Installation
 Add via composer.json:
 ----------------------
 
-.. code-block:: javascript
+The extension is distributed via Composer only. A TER release is not provided.
+
+.. code-block:: bash
 
   composer require "passionweb/ai-seo-helper"
 
-- Install the extension via composer
-- Flush TYPO3 and PHP Cache
+- Install the extension via Composer
+- Run ``vendor/bin/typo3 extension:setup`` to create the database table
+- Flush TYPO3 and PHP cache
 - Add your OpenAI secret key to the extension configuration before using the extension
-
-.. _add_via_ter:
-
-Add via TER:
-------------
-
-If you want to install the extension via TER you can find detailed instructions `here <https://docs.typo3.org/m/typo3/guide-installation/10.4/en-us/ExtensionInstallation/Index.html>`_.
-
-* Install the extension via TER
-* Flush TYPO3 and PHP Cache
-* Add your OpenAI secret key to the extension configuration before using the extension
 
 .. _add_further_information:
 

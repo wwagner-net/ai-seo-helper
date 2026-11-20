@@ -1,5 +1,6 @@
 import AjaxRequest from "@typo3/core/ajax/ajax-request.js";
 import Notification from "@typo3/backend/notification.js";
+import labels from "~labels/ai_seo_helper.backend";
 
 class GenerateSuggestions {
     constructor() {
@@ -31,7 +32,7 @@ class GenerateSuggestions {
      * @param {function} addSelectionToAdditionalFields
      */
     sendAjaxRequest(pageId, fieldName, handleResponse, addSelectionToAdditionalFields) {
-        Notification.info(TYPO3.lang['AiSeoHelper.notification.generation.start'], TYPO3.lang['AiSeoHelper.notification.generation.start.suggestions'], 8);
+        Notification.info(labels.get('AiSeoHelper.notification.generation.start'), labels.get('AiSeoHelper.notification.generation.start.suggestions'), 8);
         new AjaxRequest(TYPO3.settings.ajaxUrls[fieldName+'_generation'])
             .post(
                 { pageId: pageId }
@@ -40,14 +41,14 @@ class GenerateSuggestions {
                 const resolved = await response.resolve();
                 const responseBody = JSON.parse(resolved);
                 if(responseBody.error) {
-                    Notification.error(TYPO3.lang['AiSeoHelper.notification.generation.requestError'], responseBody.error);
+                    Notification.error(labels.get('AiSeoHelper.notification.generation.requestError'), responseBody.error);
                 } else {
                     handleResponse(pageId, fieldName, responseBody, addSelectionToAdditionalFields)
-                    Notification.success(TYPO3.lang['AiSeoHelper.notification.generation.finish'], TYPO3.lang['AiSeoHelper.notification.generation.finish.suggestions'], 8);
+                    Notification.success(labels.get('AiSeoHelper.notification.generation.finish'), labels.get('AiSeoHelper.notification.generation.finish.suggestions'), 8);
                 }
             })
             .catch((error) => {
-                Notification.error(TYPO3.lang['AiSeoHelper.notification.generation.error'], error);
+                Notification.error(labels.get('AiSeoHelper.notification.generation.error'), error);
             });
     }
 
@@ -73,7 +74,7 @@ class GenerateSuggestions {
                 ev.preventDefault();
                 let selectedSuggestion = document.querySelector('input[name="generatedSuggestions"]:checked');
                 if(selectedSuggestion === null) {
-                    Notification.info(TYPO3.lang['AiSeoHelper.notification.generation.suggestions.missingSelection'], TYPO3.lang['AiSeoHelper.notification.generation.suggestions.missingSelectionInfo'], 8);
+                    Notification.info(labels.get('AiSeoHelper.notification.generation.suggestions.missingSelection'), labels.get('AiSeoHelper.notification.generation.suggestions.missingSelectionInfo'), 8);
                 } else {
                     if(document.querySelector('input[data-formengine-input-name="data[pages]['+pageId+']['+fieldName+']"]')) {
                         document.querySelector('input[data-formengine-input-name="data[pages]['+pageId+']['+fieldName+']"]').value = selectedSuggestion.value;
@@ -98,14 +99,14 @@ class GenerateSuggestions {
 
     addSelectionToAdditionalFields(useForAdditionalFields, pageId, fieldName, selectedSuggestionValue) {
         if(useForAdditionalFields && fieldName === 'seo_title') {
-            Notification.info(TYPO3.lang['AiSeoHelper.notification.generation.copy'], TYPO3.lang['AiSeoHelper.notification.generation.suggestions.ogTwitterTitlesUpdated'], 8);
+            Notification.info(labels.get('AiSeoHelper.notification.generation.copy'), labels.get('AiSeoHelper.notification.generation.suggestions.ogTwitterTitlesUpdated'), 8);
             document.querySelector('input[data-formengine-input-name="data[pages]['+pageId+'][og_title]"]').value = selectedSuggestionValue;
             document.querySelector('input[name="data[pages]['+pageId+'][og_title]"]').value = selectedSuggestionValue;
             document.querySelector('input[data-formengine-input-name="data[pages]['+pageId+'][twitter_title]"]').value = selectedSuggestionValue;
             document.querySelector('input[name="data[pages]['+pageId+'][twitter_title]"]').value = selectedSuggestionValue;
         }
         if(useForAdditionalFields && fieldName === 'description') {
-            Notification.info(TYPO3.lang['AiSeoHelper.notification.generation.copy'], TYPO3.lang['AiSeoHelper.notification.generation.suggestions.ogTwitterDescriptionsUpdated'], 8);
+            Notification.info(labels.get('AiSeoHelper.notification.generation.copy'), labels.get('AiSeoHelper.notification.generation.suggestions.ogTwitterDescriptionsUpdated'), 8);
             document.querySelector('textarea[data-formengine-input-name="data[pages]['+pageId+'][og_description]"]').value = selectedSuggestionValue;
             document.querySelector('textarea[name="data[pages]['+pageId+'][og_description]"]').value = selectedSuggestionValue;
             document.querySelector('textarea[data-formengine-input-name="data[pages]['+pageId+'][twitter_description]"]').value = selectedSuggestionValue;

@@ -15,7 +15,7 @@ class AiSeoAbstract extends AbstractNode
     {
         $resultArray = [
             'iconIdentifier' => 'actions-document-synchronize',
-            'title' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.generation.abstractSuggestions'),
+            'title' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.generation.abstractSuggestions'),
             'linkAttributes' => [
                 'id' => 'abstract_generation',
                 'class' => 'ai-seo-helper-suggestions-generation-btn',

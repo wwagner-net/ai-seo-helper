@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Passionweb\AiSeoHelper\Factory;
 
 use Passionweb\AiSeoHelper\Domain\Repository\CustomLanguageRepository;
@@ -32,12 +34,9 @@ class CustomLanguageFactory
         'cn' => 'Chinese',
     ];
 
-    protected CustomLanguageRepository $customLanguageRepository;
-
-    public function __construct(CustomLanguageRepository $customLanguageRepository)
-    {
-        $this->customLanguageRepository = $customLanguageRepository;
-    }
+    public function __construct(
+        private readonly CustomLanguageRepository $customLanguageRepository,
+    ) {}
 
     public function getCustomLanguages(): array
     {

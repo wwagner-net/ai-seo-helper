@@ -25,6 +25,11 @@ By using an additional button next to the corresponding input fields you can gen
 Requirements
 ^^^^^^^^^^^^
 
+- TYPO3 14.3 and PHP 8.2 or newer. Installations running TYPO3 11, 12 or 13 have to stay on version 0.7.x.
+- Installation via Composer only.
+- Optional: EXT:news 14.1 or newer to generate data for news records.
+- Optional: ``typo3/cms-seo`` for the SEO, Open Graph and Twitter page fields.
+
 You need an OpenAI account and API key. If you have not yet created an account or key, you can do so using the following links.
 
 - `Create OpenAI account <https://platform.openai.com/signup>`_

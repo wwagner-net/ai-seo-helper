@@ -9,22 +9,19 @@ use Passionweb\AiSeoHelper\Service\ContentService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Backend\Attribute\AsController;
 use TYPO3\CMS\Core\Exception;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
+#[AsController]
 class AiController
 {
-    protected ContentService $contentService;
-
-    protected LoggerInterface $logger;
-
-    public function __construct(ContentService $contentService, LoggerInterface $logger)
-    {
-        $this->contentService = $contentService;
-        $this->logger = $logger;
-    }
+    public function __construct(
+        private readonly ContentService $contentService,
+        private readonly LoggerInterface $logger,
+    ) {}
 
     public function generateMetaDescriptionAction(ServerRequestInterface $request): ResponseInterface
     {
@@ -131,10 +128,10 @@ class AiController
         $this->logger->error($e->getMessage());
         if ($e->getCode() === 500 && strpos($e->getMessage(), 'auth_subrequest_error') !== false) {
             $response->withStatus($e->getCode());
-            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.apiNotReachable')]));
+            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.apiNotReachable')]));
         } elseif ($e->getCode() === 401 && strpos($e->getMessage(), 'You need to provide your API key') !== false) {
             $response->withStatus($e->getCode());
-            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.missingApiKey')]));
+            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.missingApiKey')]));
         } else {
             $response->withStatus(400);
             $response->getBody()->write(json_encode(['success' => false, 'error' => $e->getMessage()]));
@@ -147,9 +144,9 @@ class AiController
         $this->logger->error($e->getMessage());
         $response->withStatus(400);
         if ($e->getCode() === 1476107295) {
-            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.pageNotAccessible')]));
+            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.pageNotAccessible')]));
         } else {
-            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.noValidAiResponse')]));
+            $response->getBody()->write(json_encode(['success' => false, 'error' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.noValidAiResponse')]));
         }
         return $response;
     }

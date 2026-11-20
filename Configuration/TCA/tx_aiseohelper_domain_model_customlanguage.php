@@ -2,7 +2,7 @@
 
 return [
     'ctrl' => [
-        'title' => 'LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.tx_aiseohelper_domain_model_customlanguage',
+        'title' => 'ai_seo_helper.backend:AiSeoHelper.tx_aiseohelper_domain_model_customlanguage',
         'label' => 'iso_code',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
@@ -16,7 +16,6 @@ return [
             'starttime' => 'starttime',
             'endtime' => 'endtime',
         ],
-        'searchFields' => 'iso_code,speech',
         'iconfile' => 'EXT:ai_seo_helper/Resources/Public/Icons/tx_aiseohelper_domain_model_customlanguage.svg',
         'security' => [
             'ignorePageTypeRestriction' => true,
@@ -30,18 +29,8 @@ return [
             'exclude' => true,
             'label' => 'LLL:EXT:core/Resources/Private/Language/locallang_general.xlf:LGL.language',
             'config' => [
-                'type' => 'select',
-                'renderType' => 'selectSingle',
-                'special' => 'languages',
-                'items' => [
-                    [
-                        'LLL:EXT:core/Resources/Private/Language/locallang_general.xlf:LGL.allLanguages',
-                        -1,
-                        'flags-multiple'
-                    ]
-                ],
-                'default' => 0,
-            ]
+                'type' => 'language',
+            ],
         ],
         'l10n_parent' => [
             'displayCond' => 'FIELD:sys_language_uid:>:0',
@@ -51,7 +40,7 @@ return [
                 'renderType' => 'selectSingle',
                 'default' => 0,
                 'items' => [
-                    ['', 0],
+                    ['label' => '', 'value' => 0],
                 ],
                 'foreign_table' => 'tx_aiseohelper_domain_model_customlanguage',
                 'foreign_table_where' => 'AND {#tx_aiseohelper_domain_model_customlanguage}.{#pid}=###CURRENT_PID### AND {#tx_aiseohelper_domain_model_customlanguage}.{#sys_language_uid} IN (-1,0)',
@@ -70,9 +59,8 @@ return [
                 'renderType' => 'checkboxToggle',
                 'items' => [
                     [
-                        0 => '',
-                        1 => '',
-                    ]
+                        'label' => '',
+                    ],
                 ],
             ],
         ],
@@ -80,49 +68,47 @@ return [
             'exclude' => true,
             'label' => 'LLL:EXT:core/Resources/Private/Language/locallang_general.xlf:LGL.starttime',
             'config' => [
-                'type' => 'input',
-                'renderType' => 'inputDateTime',
-                'eval' => 'datetime,int',
+                'type' => 'datetime',
                 'default' => 0,
+                'searchable' => false,
                 'behaviour' => [
-                    'allowLanguageSynchronization' => true
-                ]
+                    'allowLanguageSynchronization' => true,
+                ],
             ],
         ],
         'endtime' => [
             'exclude' => true,
             'label' => 'LLL:EXT:core/Resources/Private/Language/locallang_general.xlf:LGL.endtime',
             'config' => [
-                'type' => 'input',
-                'renderType' => 'inputDateTime',
-                'eval' => 'datetime,int',
+                'type' => 'datetime',
                 'default' => 0,
+                'searchable' => false,
                 'range' => [
-                    'upper' => mktime(0, 0, 0, 1, 1, 2038)
+                    'upper' => mktime(0, 0, 0, 1, 1, 2038),
                 ],
                 'behaviour' => [
-                    'allowLanguageSynchronization' => true
-                ]
+                    'allowLanguageSynchronization' => true,
+                ],
             ],
         ],
         'iso_code' => [
             'exclude' => true,
-            'label' => 'LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.tx_aiseohelper_domain_model_customlanguage.iso_code',
+            'label' => 'ai_seo_helper.backend:AiSeoHelper.tx_aiseohelper_domain_model_customlanguage.iso_code',
             'config' => [
                 'type' => 'input',
                 'size' => 30,
                 'eval' => 'trim',
-                'default' => ''
+                'default' => '',
             ],
         ],
         'speech' => [
             'exclude' => true,
-            'label' => 'LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.tx_aiseohelper_domain_model_customlanguage.speech',
+            'label' => 'ai_seo_helper.backend:AiSeoHelper.tx_aiseohelper_domain_model_customlanguage.speech',
             'config' => [
                 'type' => 'input',
                 'size' => 30,
                 'eval' => 'trim',
-                'default' => ''
+                'default' => '',
             ],
         ],
     ],

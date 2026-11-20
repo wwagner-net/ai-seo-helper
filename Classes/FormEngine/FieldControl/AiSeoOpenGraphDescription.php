@@ -15,7 +15,7 @@ class AiSeoOpenGraphDescription extends AbstractNode
     {
         $resultArray = [
             'iconIdentifier' => 'actions-document-synchronize',
-            'title' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.generation.ogDescriptionSuggestions'),
+            'title' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.generation.ogDescriptionSuggestions'),
             'linkAttributes' => [
                 'id' => 'og_description_generation',
                 'class' => 'ai-seo-helper-suggestions-generation-btn',

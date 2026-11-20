@@ -11,20 +11,13 @@ By using an additional button next to the corresponding input fields you can gen
 
 ## Installation
 
-### Add via composer:
+The extension is distributed via Composer only. A TER release is not provided.
 
     composer require "passionweb/ai-seo-helper"
 
-* Install the extension via composer
-* Flush TYPO3 and PHP Cache
-* Add your OpenAI secret key to the extension configuration before using the extension
-
-### Add via TER:
-
-If you want to install the extension via TER you can find detailed instructions [here](https://docs.typo3.org/m/typo3/guide-installation/10.4/en-us/ExtensionInstallation/Index.html).
-
-* Install the extension via TER
-* Flush TYPO3 and PHP Cache
+* Install the extension via Composer
+* Run `vendor/bin/typo3 extension:setup` to create the database table
+* Flush TYPO3 and PHP cache
 * Add your OpenAI secret key to the extension configuration before using the extension
 
 ### Further information
@@ -32,6 +25,15 @@ If you want to install the extension via TER you can find detailed instructions 
 The different ways to install an extension and additional detailed information can be found [here](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ExtensionArchitecture/HowTo/ExtensionManagement.html).
 
 ## Requirements
+
+| Version | TYPO3     | PHP        |
+|---------|-----------|------------|
+| 1.x     | 14.3      | 8.2 or newer |
+| 0.7.x   | 11.5–13.4 | 8.0 or newer |
+
+Version 1.x supports TYPO3 14 only. Installations running TYPO3 11, 12 or 13 have to stay on 0.7.x.
+
+To generate data for news records, [EXT:news](https://extensions.typo3.org/extension/news) 14.1 or newer is required. The SEO, Open Graph and Twitter page fields are provided by the TYPO3 core extension `typo3/cms-seo`.
 
 You need an OpenAI account and API key. If you have not yet created an account or key, you can do so using the following links.
 

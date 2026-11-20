@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <xliff version="1.0">
-	<file source-language="en" target-lanlguage="de" datatype="plaintext" original="EXT:ai_seo_helper/Resources/Private/Language/backend.xlf" date="2022-10-12T13:12:24Z" product-name="ai_seo_helper">
+	<file source-language="en" target-language="de" datatype="plaintext" original="EXT:ai_seo_helper/Resources/Private/Language/backend.xlf" date="2022-10-12T13:12:24Z" product-name="ai_seo_helper">
 		<header/>
 		<body>
 		    <trans-unit id="AiSeoHelper.generation.keywords" resname="AiSeoHelper.generation.keywords">

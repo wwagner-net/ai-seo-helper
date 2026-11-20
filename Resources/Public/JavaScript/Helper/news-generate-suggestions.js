@@ -1,5 +1,6 @@
 import AjaxRequest from "@typo3/core/ajax/ajax-request.js";
 import Notification from "@typo3/backend/notification.js";
+import labels from "~labels/ai_seo_helper.backend";
 
 class NewsGenerateSuggestions {
     constructor() {
@@ -31,7 +32,7 @@ class NewsGenerateSuggestions {
      * @param {function} handleResponse
      */
     sendAjaxRequest(newsId, folderId, fieldName, handleResponse) {
-        Notification.info(TYPO3.lang['AiSeoHelper.notification.generation.start'], TYPO3.lang['AiSeoHelper.notification.generation.start.suggestions'], 8);
+        Notification.info(labels.get('AiSeoHelper.notification.generation.start'), labels.get('AiSeoHelper.notification.generation.start.suggestions'), 8);
         new AjaxRequest(TYPO3.settings.ajaxUrls['news_'+fieldName+'_generation'])
             .post(
                 { newsId: newsId, folderId: folderId }
@@ -40,14 +41,14 @@ class NewsGenerateSuggestions {
                 const resolved = await response.resolve();
                 const responseBody = JSON.parse(resolved);
                 if(responseBody.error) {
-                    Notification.error(TYPO3.lang['AiSeoHelper.notification.generation.requestError'], responseBody.error);
+                    Notification.error(labels.get('AiSeoHelper.notification.generation.requestError'), responseBody.error);
                 } else {
                     handleResponse(newsId, fieldName, responseBody)
-                    Notification.success(TYPO3.lang['AiSeoHelper.notification.generation.finish'], TYPO3.lang['AiSeoHelper.notification.generation.finish.suggestions'], 8);
+                    Notification.success(labels.get('AiSeoHelper.notification.generation.finish'), labels.get('AiSeoHelper.notification.generation.finish.suggestions'), 8);
                 }
             })
             .catch((error) => {
-                Notification.error(TYPO3.lang['AiSeoHelper.notification.generation.error'], error);
+                Notification.error(labels.get('AiSeoHelper.notification.generation.error'), error);
             });
     }
 
@@ -72,7 +73,7 @@ class NewsGenerateSuggestions {
                 ev.preventDefault();
                 let selectedSuggestion = document.querySelector('input[name="generatedSuggestions"]:checked');
                 if(selectedSuggestion === null) {
-                    Notification.info(TYPO3.lang['AiSeoHelper.notification.generation.suggestions.missingSelection'], TYPO3.lang['AiSeoHelper.notification.generation.suggestions.missingSelectionInfo'], 8);
+                    Notification.info(labels.get('AiSeoHelper.notification.generation.suggestions.missingSelection'), labels.get('AiSeoHelper.notification.generation.suggestions.missingSelectionInfo'), 8);
                 } else {
                     if(document.querySelector('input[data-formengine-input-name="data[tx_news_domain_model_news]['+newsId+']['+fieldName+']"]')) {
                         document.querySelector('input[data-formengine-input-name="data[tx_news_domain_model_news]['+newsId+']['+fieldName+']"]').value = selectedSuggestion.value;

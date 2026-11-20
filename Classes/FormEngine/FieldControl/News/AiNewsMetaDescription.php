@@ -15,7 +15,7 @@ class AiNewsMetaDescription extends AbstractNode
     {
         $resultArray = [
             'iconIdentifier' => 'actions-document-synchronize',
-            'title' => LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.generation.newsDescriptionSuggestions'),
+            'title' => LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.generation.newsDescriptionSuggestions'),
             'linkAttributes' => [
                 'id' => 'description_generation',
                 'class' => 'ai-seo-helper-news-suggestions-generation-btn',

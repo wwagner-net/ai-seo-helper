@@ -5,42 +5,36 @@ declare(strict_types=1);
 namespace Passionweb\AiSeoHelper\Service;
 
 use GuzzleHttp\Exception\GuzzleException;
+use Passionweb\AiSeoHelper\Factory\CustomLanguageFactory;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Routing\PreviewUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 use TYPO3\CMS\Core\Exception;
 use TYPO3\CMS\Core\Http\RequestFactory;
-use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Routing\SiteMatcher;
 use TYPO3\CMS\Core\Routing\UnableToLinkToPageException;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\View\ViewFactoryData;
+use TYPO3\CMS\Core\View\ViewFactoryInterface;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
-use TYPO3\CMS\Fluid\View\StandaloneView;
 
 class ContentService
 {
-    protected array $languages;
-    protected array $extConf;
+    private readonly array $extConf;
 
-    protected PageRepository $pageRepository;
-    protected RequestFactory $requestFactory;
-    protected SiteMatcher $siteMatcher;
-
+    private ?array $languages = null;
 
     public function __construct(
-        PageRepository       $pageRepository,
-        SiteMatcher          $siteMatcher,
-        RequestFactory       $requestFactory,
-        array                $languages,
-        array                $extConf
-    )
-    {
-        $this->pageRepository = $pageRepository;
-        $this->siteMatcher = $siteMatcher;
-        $this->requestFactory = $requestFactory;
-        $this->languages = $languages;
-        $this->extConf = $extConf;
+        private readonly PageRepository $pageRepository,
+        private readonly SiteMatcher $siteMatcher,
+        private readonly RequestFactory $requestFactory,
+        private readonly ViewFactoryInterface $viewFactory,
+        private readonly CustomLanguageFactory $customLanguageFactory,
+        ExtensionConfiguration $extensionConfiguration,
+    ) {
+        $this->extConf = $extensionConfiguration->get('ai_seo_helper');
     }
 
     /**
@@ -50,65 +44,57 @@ class ContentService
      */
     public function getContentFromAi(
         ServerRequestInterface $request,
-        string                 $extConfPrompt,
-        string                 $extConfReplaceText = ""
-    ): array
-    {
+        string $extConfPrompt,
+        string $extConfReplaceText = ''
+    ): array {
         $parsedBody = $request->getParsedBody();
-        $typo3Version = GeneralUtility::makeInstance(Typo3Version::class);
 
         if (array_key_exists('newsId', $parsedBody)) {
-            $folder = $this->pageRepository->getPage((int)$parsedBody['folderId']);
-            $siteLanguage = $this->getSiteLanguageFromPageId((int)$parsedBody['folderId'], $folder['sys_language_uid']);
-            $strippedNewsContent = $this->stripNewsContent($this->fetchContentOfNewsArticle((int)$parsedBody['newsId'], $siteLanguage->getLanguageId()));
-            if ($typo3Version->getMajorVersion() > 11) {
-                return $this->requestAi($strippedNewsContent, $extConfPrompt, $extConfReplaceText, $siteLanguage->getLocale()->getLanguageCode());
-            } else {
-                return $this->requestAi($strippedNewsContent, $extConfPrompt, $extConfReplaceText, $siteLanguage->getTwoLetterIsoCode());
-            }
-        } else {
-            $page = $this->pageRepository->getPage((int)$parsedBody['pageId']);
-            $pageId = (int)$parsedBody['pageId'];
-            if ($page['is_siteroot'] === 1 && $page['l10n_parent'] > 0) {
-                $pageId = $page['l10n_parent'];
-            }
-            $siteLanguage = $this->getSiteLanguageFromPageId($pageId, $page['sys_language_uid']);
-            $previewUrl = $this->getPreviewUrl($pageId, $siteLanguage->getLanguageId());
-
-            $strippedPageContent = $this->stripPageContent($this->fetchContentFromUrl($previewUrl));
-
-            if ($typo3Version->getMajorVersion() > 11) {
-                if ($this->extConf['useUrlForRequest'] === '1') {
-                    return $this->requestAi($previewUrl, $extConfPrompt, $extConfReplaceText, $siteLanguage->getLocale()->getLanguageCode());
-                } else {
-                    return $this->requestAi($strippedPageContent, $extConfPrompt, $extConfReplaceText, $siteLanguage->getLocale()->getLanguageCode());
-                }
-            } else {
-                if ($this->extConf['useUrlForRequest'] === '1') {
-                    return $this->requestAi($previewUrl, $extConfPrompt, $extConfReplaceText, $siteLanguage->getTwoLetterIsoCode());
-                } else {
-                    return $this->requestAi($strippedPageContent, $extConfPrompt, $extConfReplaceText, $siteLanguage->getTwoLetterIsoCode());
-                }
-            }
+            $newsId = (int)$parsedBody['newsId'];
+            $newsRecord = BackendUtility::getRecord('tx_news_domain_model_news', $newsId, 'uid,sys_language_uid,l10n_parent') ?? [];
+            // News links address the default language record and resolve the translation via the site language
+            $defaultLanguageNewsId = (int)($newsRecord['l10n_parent'] ?? 0) > 0 ? (int)$newsRecord['l10n_parent'] : $newsId;
+            $newsLanguageId = max(0, (int)($newsRecord['sys_language_uid'] ?? 0));
+            $siteLanguage = $this->getSiteLanguageFromPageId((int)$parsedBody['folderId'], $newsLanguageId);
+            $strippedNewsContent = $this->stripNewsContent(
+                $this->fetchContentOfNewsArticle($request, $defaultLanguageNewsId, $siteLanguage->getLanguageId())
+            );
+            return $this->requestAi($strippedNewsContent, $extConfPrompt, $extConfReplaceText, $siteLanguage->getLocale()->getLanguageCode());
         }
+
+        $page = $this->pageRepository->getPage((int)$parsedBody['pageId']);
+        $pageId = (int)$parsedBody['pageId'];
+        if ($page['is_siteroot'] === 1 && $page['l10n_parent'] > 0) {
+            $pageId = $page['l10n_parent'];
+        }
+        $siteLanguage = $this->getSiteLanguageFromPageId($pageId, $page['sys_language_uid']);
+        $previewUrl = $this->getPreviewUrl($request, $pageId, $siteLanguage->getLanguageId());
+        $languageCode = $siteLanguage->getLocale()->getLanguageCode();
+        $strippedPageContent = $this->stripPageContent($this->fetchContentFromUrl($previewUrl));
+
+        if ($this->extConf['useUrlForRequest'] === '1') {
+            return $this->requestAi($previewUrl, $extConfPrompt, $extConfReplaceText, $languageCode);
+        }
+        return $this->requestAi($strippedPageContent, $extConfPrompt, $extConfReplaceText, $languageCode);
     }
 
     /**
      * @throws GuzzleException
      */
-    public function requestAi(string $content, $extConfPromptPrefix, $extConfReplaceText, $languageIsoCode): array
+    public function requestAi(string $content, string $extConfPromptPrefix, string $extConfReplaceText, string $languageIsoCode): array
     {
+        $languages = $this->getLanguages();
         $jsonContent = [
-            "model" => $this->extConf['openAiModel'],
-            "temperature" => (float)$this->extConf['openAiTemperature'],
-            "top_p" => (float)$this->extConf['openAiTopP'],
-            "response_format" => ['type' => 'json_object'],
-            "messages" => [
+            'model' => $this->extConf['openAiModel'],
+            'temperature' => (float)$this->extConf['openAiTemperature'],
+            'top_p' => (float)$this->extConf['openAiTopP'],
+            'response_format' => ['type' => 'json_object'],
+            'messages' => [
                 [
                     'role' => 'user',
-                    'content' => $this->extConf[$extConfPromptPrefix] . ' in ' . $this->languages[$languageIsoCode] . ":\n\n" . trim($content) . "\n\n Return at least five suggestions and return the response as array in valid JSON format.",
-                ]
-            ]
+                    'content' => $this->extConf[$extConfPromptPrefix] . ' in ' . $languages[$languageIsoCode] . ":\n\n" . trim($content) . "\n\n Return at least five suggestions and return the response as array in valid JSON format.",
+                ],
+            ],
         ];
 
         $response = $this->requestFactory->request(
@@ -117,21 +103,20 @@ class ContentService
             [
                 'headers' => [
                     'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $this->extConf['openAiApiKey']
+                    'Authorization' => 'Bearer ' . $this->extConf['openAiApiKey'],
                 ],
-                'json' => $jsonContent
+                'json' => $jsonContent,
             ]
         );
 
         $resJsonBody = $response->getBody()->getContents();
         $resBody = json_decode($resJsonBody, true);
         $metadataResponse = json_decode($resBody['choices'][0]['message']['content'], true);
-        if(is_array($metadataResponse) && count($metadataResponse) > 1){
+        if (is_array($metadataResponse) && count($metadataResponse) > 1) {
             return $metadataResponse;
-        } else {
-            $key = array_key_first($metadataResponse);
-            return $metadataResponse[$key];
         }
+        $key = array_key_first($metadataResponse);
+        return $metadataResponse[$key];
     }
 
     /**
@@ -143,27 +128,15 @@ class ContentService
     {
         $suggestions = $this->getContentFromAi($request, 'openAiPromptPrefix' . $type);
         $flatSuggestions = [];
-        array_walk_recursive($suggestions, function($value) use (&$flatSuggestions) {
+        array_walk_recursive($suggestions, function ($value) use (&$flatSuggestions) {
             $flatSuggestions[] = $value;
         });
-        $typo3Version = GeneralUtility::makeInstance(Typo3Version::class);
-        if ($typo3Version->getMajorVersion() > 12) {
-            $viewFactoryData = new \TYPO3\CMS\Core\View\ViewFactoryData(
-                templateRootPaths: ['EXT:ai_seo_helper/Resources/Private/Templates/Ajax/Ai/'],
-                request: $request
-            );
-            $viewFactory = GeneralUtility::makeInstance(\TYPO3\CMS\Core\View\ViewFactoryInterface::class);
-            $view = $viewFactory->create($viewFactoryData);
-            $view->assign('suggestions', $flatSuggestions);
-            return $view->render('GenerateSuggestions');
-        } else {
-            $standaloneView = GeneralUtility::makeInstance(StandaloneView::class);
-            $standaloneView->setTemplateRootPaths(['EXT:ai_seo_helper/Resources/Private/Templates/Ajax/Ai/']);
-            $standaloneView->getRenderingContext()->setControllerName('Ai');
-            $standaloneView->setTemplate('GenerateSuggestions');
-            $standaloneView->assign('suggestions', $flatSuggestions);
-            return $standaloneView->render();
-        }
+        $view = $this->viewFactory->create(new ViewFactoryData(
+            templateRootPaths: ['EXT:ai_seo_helper/Resources/Private/Templates/Ajax/Ai/'],
+            request: $request
+        ));
+        $view->assign('suggestions', $flatSuggestions);
+        return $view->render('GenerateSuggestions');
     }
 
     public function checkUseForAdditionalFields(string $type): bool
@@ -172,6 +145,11 @@ class ContentService
             return false;
         }
         return (bool)$this->extConf[lcfirst($type) . 'ForOgAndTwitter'];
+    }
+
+    protected function getLanguages(): array
+    {
+        return $this->languages ??= $this->customLanguageFactory->getCustomLanguages();
     }
 
     protected function stripPageContent(string $pageContent): string
@@ -203,50 +181,35 @@ class ContentService
     /**
      * @throws UnableToLinkToPageException
      */
-    protected function getPreviewUrl(int $pageId, int $pageLanguage, array $additionalQueryParameters = []): string
+    protected function getPreviewUrl(ServerRequestInterface $request, int $pageId, int $pageLanguage, array $additionalQueryParameters = []): string
     {
         $additionalGetVars = '_language=' . $pageLanguage;
         foreach ($additionalQueryParameters as $key => $value) {
-            if (!empty($additionalGetVars)) {
-                $additionalGetVars .= '&';
-            }
-            $additionalGetVars .= $key . '=' . $value;
+            $additionalGetVars .= '&' . $key . '=' . $value;
         }
 
-        $typo3Version = new Typo3Version();
-        if ($typo3Version->getMajorVersion() > 10) {
-            $previewUriBuilder = \TYPO3\CMS\Backend\Routing\PreviewUriBuilder::create($pageId);
-            $previewUri = $previewUriBuilder
-                ->withAdditionalQueryParameters($additionalGetVars)
-                ->buildUri();
+        $previewUri = PreviewUriBuilder::create($pageId)
+            ->withAdditionalQueryParameters($additionalGetVars)
+            ->buildUri();
 
-            if ($previewUri === null) {
-                throw new UnableToLinkToPageException(LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.unableToLinkToPage', null, [$pageId, $pageLanguage]));
-            }
-            if ($previewUri->getScheme() === "" || $previewUri->getHost() === "") {
-                $request = $GLOBALS['TYPO3_REQUEST'];
-                $previewUri = $previewUri->withScheme($request->getUri()->getScheme());
-                $previewUri = $previewUri->withHost($request->getUri()->getHost());
-            }
-            if (count($additionalQueryParameters) > 0) {
-                return $previewUri->getScheme() . '://' . $previewUri->getHost() . $previewUri->getPath() . '?' . $previewUri->getQuery();
-            } else {
-                return $previewUri->getScheme() . '://' . $previewUri->getHost() . $previewUri->getPath();
-            }
-        } else {
-            if (count($additionalQueryParameters) > 0) {
-                return BackendUtility::getPreviewUrl($pageId, '', null, '', '', $additionalGetVars);
-            } else {
-                return BackendUtility::getPreviewUrl($pageId);
-            }
+        if ($previewUri === null) {
+            throw new UnableToLinkToPageException(LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.unableToLinkToPage', null, [$pageId, $pageLanguage]));
         }
+        if ($previewUri->getScheme() === '' || $previewUri->getHost() === '') {
+            $previewUri = $previewUri
+                ->withScheme($request->getUri()->getScheme())
+                ->withHost($request->getUri()->getHost());
+        }
+        if (count($additionalQueryParameters) > 0) {
+            return $previewUri->getScheme() . '://' . $previewUri->getHost() . $previewUri->getPath() . '?' . $previewUri->getQuery();
+        }
+        return $previewUri->getScheme() . '://' . $previewUri->getHost() . $previewUri->getPath();
     }
 
     protected function getSiteLanguageFromPageId(int $pageId, int $pageSysLanguageUid): SiteLanguage
     {
-        $siteMatcher = GeneralUtility::makeInstance(SiteMatcher::class);
         $rootLine = BackendUtility::BEgetRootLine($pageId);
-        $site = $siteMatcher->matchByPageId($pageId, $rootLine);
+        $site = $this->siteMatcher->matchByPageId($pageId, $rootLine);
         return $site->getLanguageById($pageSysLanguageUid);
     }
 
@@ -257,9 +220,8 @@ class ContentService
     {
         try {
             return $this->getContentFromPreviewUrl($previewUrl);
-        } catch (GuzzleException $e) {
-            $previewUrl = rtrim($previewUrl, '/');
-            return $this->getContentFromPreviewUrl($previewUrl);
+        } catch (GuzzleException) {
+            return $this->getContentFromPreviewUrl(rtrim($previewUrl, '/'));
         }
     }
 
@@ -272,7 +234,7 @@ class ContentService
         $fetchedContent = $response->getBody()->getContents();
 
         if (empty($fetchedContent)) {
-            throw new Exception(LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.fetchContentFailed'));
+            throw new Exception(LocalizationUtility::translate('ai_seo_helper.backend:AiSeoHelper.fetchContentFailed'));
         }
         return $fetchedContent;
     }
@@ -280,21 +242,15 @@ class ContentService
     /**
      * @throws Exception
      */
-    protected function fetchContentOfNewsArticle(int $newsId, int $pageLanaguage): string
+    protected function fetchContentOfNewsArticle(ServerRequestInterface $request, int $newsId, int $pageLanguage): string
     {
         $additionalQueryParameters = [
             'tx_news_pi1[action]' => 'detail',
             'tx_news_pi1[controller]' => 'News',
-            'tx_news_pi1[news]' => $newsId
+            'tx_news_pi1[news]' => $newsId,
         ];
 
-        $previewUrl = $this->getPreviewUrl((int)$this->extConf['singleNewsDisplayPage'], $pageLanaguage, $additionalQueryParameters);
-        $response = $this->requestFactory->request($previewUrl);
-        $fetchedContent = $response->getBody()->getContents();
-
-        if (empty($fetchedContent)) {
-            throw new Exception(LocalizationUtility::translate('LLL:EXT:ai_seo_helper/Resources/Private/Language/backend.xlf:AiSeoHelper.fetchContentFailed'));
-        }
-        return $fetchedContent;
+        $previewUrl = $this->getPreviewUrl($request, (int)$this->extConf['singleNewsDisplayPage'], $pageLanguage, $additionalQueryParameters);
+        return $this->getContentFromPreviewUrl($previewUrl);
     }
 }
